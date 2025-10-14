@@ -1,0 +1,246 @@
+-- WindUI Loader
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+
+-- Create custom theme
+WindUI:AddTheme({
+    Name = "My Theme",
+    Accent = Color3.fromHex("#18181b"),
+    Dialog = Color3.fromHex("#161616"),
+    Outline = Color3.fromHex("#FFFFFF"),
+    Text = Color3.fromHex("#FFFFFF"),
+    Placeholder = Color3.fromHex("#7a7a7a"),
+    Background = Color3.fromHex("#101010"),
+    Button = Color3.fromHex("#52525b"),
+    Icon = Color3.fromHex("#a1a1aa")
+})
+
+WindUI:SetTheme("My Theme")
+
+-- Main Window
+local Window = WindUI:CreateWindow({
+    Title = "Fishing Hub",
+    Icon = "app-window-mac",
+    Author = "By Ummarxfarooq"
+})
+
+-- Create Main Section
+local MainSection = Window:Section({
+    Title = "Main",
+    Icon = "fish",
+    Opened = true
+})
+
+-- Create Tabs
+local Tab1 = MainSection:Tab({
+    Title = "Auto",
+    Icon = "fish",
+    Locked = false
+})
+
+local TeleportTab = MainSection:Tab({
+    Title = "Teleports",
+    Icon = "map-pin",
+    Locked = false
+})
+
+--// Services & Variables
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local VirtualUser = game:GetService("VirtualUser")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+
+local net = ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
+local RFChargeFishingRod = net["RF/ChargeFishingRod"]
+local RFRequestFishingMinigameStarted = net["RF/RequestFishingMinigameStarted"]
+local REFishingCompleted = net["RE/FishingCompleted"]
+local REClaimNotification = net["RE/ClaimNotification"]
+local REFishingStopped = net["RE/FishingStopped"]
+local RFSellAllItems = net["RF/SellAllItems"]
+
+local autoFishingEnabled = false
+local autoSellEnabled = false
+local antiAfkEnabled = false
+local antiAfkConnection = nil
+
+-- Perfect cast values
+local perfectX = -1.233184814453125
+local perfectY = 0.9950508920792316
+
+--// Functions
+
+local function handleFishingStopped()
+    REClaimNotification:FireServer("Fishes")
+end
+
+local function startFishingCycle()
+    if not autoFishingEnabled then return end
+
+    local chargeTime = (workspace.GetServerTimeNow and workspace:GetServerTimeNow()) or tick()
+    RFChargeFishingRod:InvokeServer(chargeTime)
+    task.wait(0.1)
+
+    RFRequestFishingMinigameStarted:InvokeServer(perfectX, perfectY)
+
+    local spamConnection
+    spamConnection = RunService.Heartbeat:Connect(function()
+        REFishingCompleted:FireServer()
+    end)
+
+    local stoppedConnection
+    stoppedConnection = REFishingStopped.OnClientEvent:Connect(function()
+        if spamConnection then spamConnection:Disconnect() end
+        stoppedConnection:Disconnect()
+
+        handleFishingStopped()
+
+        task.wait(1) -- slight delay before next cycle
+        if autoFishingEnabled then
+            startFishingCycle()
+        end
+    end)
+end
+
+--// Persistent Auto Sell Loop
+spawn(function()
+    while task.wait(1) do -- check every 1 second
+        if autoSellEnabled then
+            pcall(function()
+                RFSellAllItems:InvokeServer()
+            end)
+        end
+    end
+end)
+
+--// UI Toggles
+Tab1:Toggle({
+    Title = "Auto Fishing",
+    Desc = "Automatically fishes with perfect timing.",
+    Icon = "fish",
+    Type = "Checkbox",
+    Default = false,
+    Callback = function(state)
+        autoFishingEnabled = state
+        if state then startFishingCycle() end
+    end
+})
+
+Tab1:Toggle({
+    Title = "Auto Sell",
+    Desc = "Automatically sells fish after catching.",
+    Icon = "dollar-sign",
+    Type = "Checkbox",
+    Default = false,
+    Callback = function(state)
+        autoSellEnabled = state
+    end
+})
+
+--// ✅ Anti-AFK Toggle
+Tab1:Toggle({
+    Title = "Anti AFK",
+    Desc = "Prevents Roblox from kicking you for inactivity.",
+    Icon = "moon",
+    Type = "Checkbox",
+    Default = false,
+    Callback = function(state)
+        antiAfkEnabled = state
+
+        if state then
+            if antiAfkConnection then antiAfkConnection:Disconnect() end
+            antiAfkConnection = player.Idled:Connect(function()
+                VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+                task.wait(1)
+                VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            end)
+        else
+            if antiAfkConnection then
+                antiAfkConnection:Disconnect()
+                antiAfkConnection = nil
+            end
+        end
+    end
+})
+
+--// ISLAND TELEPORTS
+local Islands = {
+    {Title = "Fisherman Island", CFrame = CFrame.new(45.2788086, 252.562927, 2987.10913)},
+    {Title = "Coral Reefs", CFrame = CFrame.new(-3025.44604, 58.21521, 2110.72192)},
+    {Title = "Crystal Island", CFrame = CFrame.new(860.734863, 29.4218597, 4911.59277)},
+    {Title = "Esoteric Depths", CFrame = CFrame.new(3108.01123, -1303.79224, 1424.69116)},
+    {Title = "Esoteric Island", CFrame = CFrame.new(2061.67554, 23.559082, 1359.32153)},
+    {Title = "Fisherman Island (Old)", CFrame = CFrame.new(-125.094879, 15.5606079, 2809.89185)},
+    {Title = "Kohana", CFrame = CFrame.new(-586.182068, 18.236021, 594.774902)},
+    {Title = "Lost Isle", CFrame = CFrame.new(-3599.31006, -165.454437, -1362.18982)},
+    {Title = "Tropical Grove", CFrame = CFrame.new(-2195.14697, 1.76647949, 3709.00708)},
+    {Title = "Winter Fest", CFrame = CFrame.new(1679.77942, 8.78112793, 3393.71387)},
+    {Title = "Ancient Jungle", CFrame = CFrame.new(1499.51746, 14.281868, -409.530273)}
+}
+
+TeleportTab:Dropdown({
+    Title = "Teleport to Island",
+    Values = Islands,
+    Value = Islands[1],
+    Callback = function(selected)
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            char:PivotTo(selected.CFrame)
+        end
+    end
+})
+
+--// NPC TELEPORTS
+local NPCs = {
+    {Title = "Alex", CFrame = CFrame.new(48.0930824, 17.4960938, 2877.13379)},
+    {Title = "Alien Merchant", CFrame = CFrame.new(-132.127686, 2.71751165, 2757.46191)},
+    {Title = "Aura Kid", CFrame = CFrame.new(71.0932083, 18.5335236, 2830.35889)},
+    {Title = "Billy Bob", CFrame = CFrame.new(79.8430176, 18.659088, 2876.63379)},
+    {Title = "Boat Expert", CFrame = CFrame.new(33.3180008, 9.8, 2783.00903)},
+    {Title = "Jim", CFrame = CFrame.new(84.895195, 9.824893, 2797.39233)},
+    {Title = "Joe", CFrame = CFrame.new(144.043442, 20.4837284, 2862.38379)},
+    {Title = "Ron", CFrame = CFrame.new(-51.7067909, 17.3335247, 2859.55884)},
+    {Title = "Scientist", CFrame = CFrame.new(-8.03684139, 14.6696262, 2885.70532)},
+    {Title = "Scott", CFrame = CFrame.new(-17.1273079, 9.53158569, 2703.35889)},
+    {Title = "Seth", CFrame = CFrame.new(111.59314, 17.4086304, 2877.13379)},
+    {Title = "Silly Fisherman", CFrame = CFrame.new(101.947266, 9.53157139, 2690.21948)},
+    {Title = "Temple Guardian", CFrame = CFrame.new(1491.47729, 127.625061, -593.159485)},
+    {Title = "Tour Guide", CFrame = CFrame.new(1238.88989, 7.82286787, -238.185654)}
+}
+
+TeleportTab:Dropdown({
+    Title = "Teleport to NPC",
+    Values = NPCs,
+    Value = NPCs[1],
+    Callback = function(selected)
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            char:PivotTo(selected.CFrame)
+        end
+    end
+})
+
+--// MACHINE TELEPORTS
+local Machines = {
+    {Title = "Luck Machine", CFrame = CFrame.new(13.3431435, 22.5339203, 2846.63379)},
+    {Title = "Spin Wheel", CFrame = CFrame.new(-151.139404, 22.0784302, 2824.63379)},
+    {Title = "Weather Machine", CFrame = CFrame.new(-1488.85706, 22.25, 1875.94202)}
+}
+
+TeleportTab:Dropdown({
+    Title = "Teleport to Machine",
+    Values = Machines,
+    Value = Machines[1],
+    Callback = function(selected)
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            char:PivotTo(selected.CFrame)
+        end
+    end
+})
+
+-- Window Tag
+Window:Tag({
+    Title = "1.1",
+    Color = Color3.fromHex("#e6e6e6"),
+    Radius = 6
+})
