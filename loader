@@ -23,6 +23,10 @@ local games = {
     [118614517739521] = {
         name = "Blind Shot",
         url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/blindshot"
+    },
+       [18799085098] = {
+        name = "💀 Hide or Die!",
+        url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/hideordie"
     }
 }
 
