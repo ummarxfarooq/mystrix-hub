@@ -27,6 +27,10 @@ local games = {
         name = "💀 Hide or Die!",
         url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/hideordie"
     },
+    [130594398886540] = {
+        name = "Garden Horizons 🌱",
+        url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/garden"
+    },
     [131623223084840] = {
         name = "Escape Tsunami For Brainrots!",
         url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/etfb"
