@@ -34,6 +34,18 @@ local games = {
     [131623223084840] = {
         name = "Escape Tsunami For Brainrots!",
         url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/etfb"
+    },
+  [86362492050446] = {
+        name = "Escape Tsunami For Brainrots!",
+        url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/etfb"
+    },
+  [111917342868480] = {
+        name = "Escape Tsunami For Brainrots!",
+        url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/etfb"
+    },
+  [137629155365661] = {
+        name = "Escape Tsunami For Brainrots!",
+        url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/etfb"
     }
 }
 local UserInputService = game:GetService("UserInputService")
