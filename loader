@@ -43,6 +43,10 @@ local games = {
         name = "Escape Tsunami For Brainrots - Trading Plaza",
         url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/eftb2"
     },
+  [123960881422056] = {
+        name = "Escape Tsunami For Brainrots - Arena",
+        url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/eftb3"
+    },
   [137629155365661] = {
         name = "Escape Tsunami For Brainrots!",
         url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/etfb"
