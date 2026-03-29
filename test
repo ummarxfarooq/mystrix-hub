@@ -1,4 +1,3 @@
-
 local Script;
 for i,v in next, getgc() do
     if type(v) == "function" then
@@ -17,8 +16,6 @@ OldIndex = hookmetamethod(game, "__index", newcclosure(function(Self, Method, ..
     end
     return OldIndex(Self, Method, ...)
 end))
-
-
 
 local function deleteWorkspaceUnderscore()
     pcall(function()
@@ -170,26 +167,22 @@ local function addToMap(rarity, names)
     end
 end
 
--- Common
 addToMap("Common", {
     "Noobini Cakenini","Lirili Larila","Tim Cheese","Frulli Frulla",
     "Talpa Di Fero","Svinino Bombondino","Pipi Kiwi","Pipi Corni"
 })
 
--- Uncommon
 addToMap("Uncommon", {
     "Trippi Troppi","Gangster Footera","Bobrito Bandito","Boneca Ambalabu",
     "Cacto Hipopotamo","Ta Ta Ta Sahur","Tric Tric Baraboom","Pipi Avocado","67"
 })
 
--- Rare
 addToMap("Rare", {
     "Cappuccino Assassino","Brr Brr Patapim","Trulimero Trulicina","Bambini Crostini",
     "Bananita Dolphinita","Perochello Lemonchello","Avocadini Guffo",
     "Salamino Penguino","Penguino Cocosino","Ti Ti Ti Sahur"
 })
 
--- Epic
 addToMap("Epic", {
     "Burbaloni Luliloli","Chimpanzini Bananini","Ballerina Cappuccina",
     "Chef Crabracadabra","Lionel Cactuseli","Glorbo Fruttodrillo",
@@ -198,7 +191,6 @@ addToMap("Epic", {
     "Cocosini Mama","Guesto Angelic"
 })
 
--- Legendary
 addToMap("Legendary", {
     "Frigo Camelo","Orangutini Ananasini","Rhino Toasterino",
     "Bombardiro Crocodilo","Spioniro Golubiro","Bombombini Gusini",
@@ -207,7 +199,6 @@ addToMap("Legendary", {
     "Eaglucci Cocosucci"
 })
 
--- Mythical
 addToMap("Mythical", {
     "Cocofanto Elefanto","Giraffa Celeste","Tralalero Tralala",
     "Los Crocodillitos","Tigroligre Frutonni","Udin Din Din Dun",
@@ -216,7 +207,6 @@ addToMap("Mythical", {
     "Piccione Macchina","Tukanno Bananno"
 })
 
--- Cosmic
 addToMap("Cosmic", {
     "La Vacca Saturno Saturnita","Torrtuginni Dragonfrutini",
     "Los Tralaleritos","Las Tralaleritas","Las Vaquitas Saturnitas",
@@ -226,7 +216,6 @@ addToMap("Cosmic", {
     "Darlungini Pandanneli","Vroosh Boosh","Gatti Marshmallini"
 })
 
--- Secret
 addToMap("Secret", {
     "Matteo","Gattatino Neonino","Statutino Libertino","Unclito Samito",
     "Gatattino Donutino","Espresso Signora","Los Tungtungtungcitos",
@@ -239,7 +228,6 @@ addToMap("Secret", {
     "Shamrock Shake Serpentissimo","Gruyello Coatto"
 })
 
--- Celestial
 addToMap("Celestial", {
     "Job Job Job Sahur","Dug Dug Dug","Bisonte Giuppitere","Alessio",
     "Esok Sekolah","Diamantusa","Avocadini Antilopini","Los Orcaleritos",
@@ -250,7 +238,6 @@ addToMap("Celestial", {
     "Shamrocko","Halloumino Arlecchino","Pallino Orsetto","Red Clownito Vampiro"
 })
 
--- Divine
 addToMap("Divine", {
     "Bulbito Bandito Traktorito","Burgerini Bearini","Strawberry Elephant",
     "Martino Gravitino","Galactio Fantasma","Grappellino D'Oro",
@@ -264,23 +251,20 @@ addToMap("Divine", {
     "Los Clownitos Vampiroseppios","Mastodontico Giostraccio"
 })
 
--- Infinity
 addToMap("Infinity", {
     "Noobini Infeeny","Anububu","Meta Technetta",
     "Magmew","Doomini Tiktookini","Nebuluck","Tung Tung Clownissimo"
 })
 
--- Paradox
 addToMap("Paradox", { "Happini Sadini" })
 
 local function getBrainrotRarity(name)
     return BrainrotToRarity[name] or "Common"
 end
 
-
-local PICKUP_HOLD_DURATION  = 3.0 
-local ARRIVAL_THRESHOLD     = 2.0   
-local MOVE_TIMEOUT          = 25   
+local PICKUP_HOLD_DURATION  = 3.0
+local ARRIVAL_THRESHOLD     = 2.0
+local MOVE_TIMEOUT          = 25
 
 local arenaEnabled     = false
 local arenaLoop        = nil
@@ -314,7 +298,6 @@ local function getPartOf(obj)
     if obj.PrimaryPart then return obj.PrimaryPart end
     return obj:FindFirstChildWhichIsA("BasePart", true)
 end
-
 
 local function getArenaBrainrotsFolder()
     return workspace:FindFirstChild("ArenaBrainrots")
@@ -380,14 +363,12 @@ local function getBestBrainrot(hrpPos)
     return best
 end
 
-
 local function brainrotStillAvailable(obj)
     if not obj or not obj.Parent then return false end
     local folder = getArenaBrainrotsFolder()
     if not folder then return false end
     return obj.Parent == folder
 end
-
 
 local function enablePhysics()
     local hrp = getHRP()
@@ -437,7 +418,6 @@ local function disablePhysics()
         end
     end)
 end
-
 
 local function moveTo(targetPos, speed, validCheck)
     local deadline  = os.clock() + MOVE_TIMEOUT
@@ -529,6 +509,7 @@ local function interactWithModel(model, holdDuration)
                 pcall(function() fireproximityprompt(prompt) end)
                 task.wait(0.04)
             end
+
             pcall(function() prompt:InputHoldBegin() end)
             task.wait(holdDuration + 0.1)
             pcall(function()
@@ -541,7 +522,6 @@ local function interactWithModel(model, holdDuration)
 end
 
 local function hasBrainrotEquipped()
-
     local c = getCharacter()
     if c then
         for _, v in ipairs(c:GetChildren()) do
@@ -582,7 +562,7 @@ local function getOwnBasePart()
     return nil
 end
 
-local characterReadySignal = nil 
+local characterReadySignal = nil
 
 local function waitForRespawn()
     disablePhysics()
@@ -591,12 +571,11 @@ local function waitForRespawn()
         if isAlive() and getHRP() then break end
         task.wait(0.2)
     end
-    task.wait(0.5) 
+    task.wait(0.5)
     enablePhysics()
 end
 
 local function runArenaLoop()
-
     local deathConn = nil
     local function hookDeath()
         local c = getCharacter()
@@ -616,7 +595,7 @@ local function runArenaLoop()
         originalGravity = nil
         hookDeath()
     end)
-    hookDeath() 
+    hookDeath()
 
     while arenaEnabled do
         if not isAlive() or not getHRP() then
@@ -700,7 +679,6 @@ local function runArenaLoop()
         local waitEnd = os.clock() + PICKUP_HOLD_DURATION + 0.5
         while os.clock() < waitEnd and arenaEnabled do
             if hasBrainrotEquipped() then break end
-
             local hrp2 = getHRP()
             local part = getPartOf(target)
             if hrp2 and part and target.Parent then
@@ -719,7 +697,6 @@ local function runArenaLoop()
         end
     end
 
-
     if deathConn    then deathConn:Disconnect()    end
     if charAddedConn then charAddedConn:Disconnect() end
     disablePhysics()
@@ -736,7 +713,7 @@ local ArenaSection = ArenaTab:Section({
 ArenaSection:Slider({
     Title    = "Move Speed",
     Flag     = "ArenaMoveSpeed",
-    Value    = { Min = 50, Max = 50000, Default = 500, Increment = 10 },
+    Value    = { Min = 50, Max = 10000, Default = 500, Increment = 10 },
     Callback = function(v) arenaTweenSpeed = v end,
 })
 
