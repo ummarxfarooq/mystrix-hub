@@ -17,6 +17,7 @@ OldIndex = hookmetamethod(game, "__index", newcclosure(function(Self, Method, ..
     return OldIndex(Self, Method, ...)
 end))
 
+
 local function deleteWorkspaceUnderscore()
     pcall(function()
         local underscoreFolder = workspace:FindFirstChild("___")
@@ -261,8 +262,6 @@ addToMap("Paradox", { "Happini Sadini" })
 local function getBrainrotRarity(name)
     return BrainrotToRarity[name] or "Common"
 end
-
-
 
 local PICKUP_HOLD_DURATION  = 3.0
 local ARRIVAL_THRESHOLD     = 2.0
@@ -593,6 +592,9 @@ local function returnToBase()
     end
 end
 
+
+
+
 local function getHarpoonGun()
     local function isHarpoon(tool)
         if not tool:IsA("Tool") then return false end
@@ -602,7 +604,6 @@ local function getHarpoonGun()
         if tool.Name:lower():find("harpoon") then return true end
         return false
     end
-
     local bp = LocalPlayer:FindFirstChild("Backpack")
     if bp then
         for _, tool in ipairs(bp:GetChildren()) do
@@ -618,13 +619,29 @@ local function getHarpoonGun()
     return nil
 end
 
-local function isHarpoonReady(harpoon)
-    if not harpoon or not harpoon.Parent then return false end
+
+local function equipHarpoon(harpoon)
+    if not harpoon then return false end
+
+    local c = getCharacter()
+    if c and harpoon:IsDescendantOf(c) then return true end
+
+    local hum = getHumanoid()
+    if not hum then return false end
+    local ok = pcall(function() hum:EquipTool(harpoon) end)
+    if not ok then return false end
+
+    task.wait(0.05)
+
+    c = getCharacter()
+    return c and harpoon:IsDescendantOf(c)
+end
+
+local function isHarpoonOnCooldown(harpoon)
+    if not harpoon or not harpoon.Parent then return true end
     local cooldownUntil = harpoon:GetAttribute("CooldownUntil")
-    if cooldownUntil and workspace:GetServerTimeNow() < cooldownUntil then
-        return false
-    end
-    return true
+    if not cooldownUntil then return false end 
+    return workspace:GetServerTimeNow() < cooldownUntil
 end
 
 local function getPickupId(target)
@@ -639,79 +656,83 @@ local function getPickupId(target)
     return nil
 end
 
-local function fireHarpoon(targetPos, pickupId)
-    local ok = pcall(function()
-        local remote = game:GetService("ReplicatedStorage")
-            :FindFirstChild("Shared")
-            :FindFirstChild("Remotes")
-            :FindFirstChild("Networking")
-            :FindFirstChild("RE/Harpoon/HarpoonActivate")
-        if remote then
-            remote:FireServer(targetPos, pickupId)
-        end
+
+local function fireHarpoonRemote(targetPos, pickupId)
+    pcall(function()
+        game:GetService("ReplicatedStorage")
+            :WaitForChild("Shared")
+            :WaitForChild("Remotes")
+            :WaitForChild("Networking")
+            :WaitForChild("RE/Harpoon/HarpoonActivate")
+            :FireServer(targetPos, pickupId)
     end)
-    if not ok then
-        pcall(function()
-            local rs = game:GetService("ReplicatedStorage")
-            local remotes = rs:FindFirstChild("Shared") and
-                rs.Shared:FindFirstChild("Remotes")
-            if remotes then
-                local net = remotes:FindFirstChild("Networking")
-                if net then
-                    local r = net:FindFirstChild("RE/Harpoon/HarpoonActivate")
-                    if r then r:FireServer(targetPos, pickupId) end
-                end
-            end
-        end)
-    end
 end
 
 local function tryHarpoonPickup(target, targetOk)
     if not autoHarpoon then return false end
 
     local harpoon = getHarpoonGun()
-    if not harpoon then return false end
+    if not harpoon then return false end  
 
-    if not isHarpoonReady(harpoon) then return false end
+    if isHarpoonOnCooldown(harpoon) then return false end
 
     local part = getPartOf(target)
     if not part then return false end
 
-    local hoverPos = Vector3.new(part.Position.X, part.Position.Y + HARPOON_HOVER_HEIGHT, part.Position.Z)
+
+    if not equipHarpoon(harpoon) then return false end
+
+    harpoon = getHarpoonGun()
+    if not harpoon then return false end
+
+
+    local hoverPos = Vector3.new(
+        part.Position.X,
+        part.Position.Y + HARPOON_HOVER_HEIGHT,
+        part.Position.Z
+    )
 
     local hrp = getHRP()
     if not hrp then return false end
+
 
     if hrp.Position.Y < flyHeight - 3 then
         local up = Vector3.new(hrp.Position.X, flyHeight, hrp.Position.Z)
         if not moveTo(up, arenaTweenSpeed, targetOk) then return false end
     end
+
     local over = Vector3.new(hoverPos.X, flyHeight, hoverPos.Z)
     if not moveTo(over, arenaTweenSpeed, targetOk) then return false end
+
     if not moveTo(hoverPos, arenaTweenSpeed, targetOk) then return false end
 
     if bodyVelocity and bodyVelocity.Parent then
         bodyVelocity.Velocity = Vector3.zero
     end
 
-    local readyWait = os.clock() + 2
-    while os.clock() < readyWait and arenaEnabled do
+
+    local readyDeadline = os.clock() + 1.5
+    while os.clock() < readyDeadline and arenaEnabled do
         if LocalPlayer:GetAttribute("HarpoonReady") then break end
         if not targetOk() then return false end
         task.wait(0.05)
     end
 
-    if not isHarpoonReady(harpoon) then return false end
+    if not arenaEnabled then return false end
+    if isHarpoonOnCooldown(harpoon) then return false end
     if not targetOk() then return false end
 
     part = getPartOf(target)
     if not part then return false end
 
     local pickupId = getPickupId(target)
-    fireHarpoon(part.Position, pickupId)
 
-    local waitEnd = os.clock() + 1.0
-    while os.clock() < waitEnd do
+
+    fireHarpoonRemote(part.Position, pickupId)
+
+
+    local fireDeadline = os.clock() + 1.5
+    while os.clock() < fireDeadline do
         if hasBrainrotEquipped() then return true end
         if not targetOk() then break end
         task.wait(0.02)
@@ -720,6 +741,9 @@ local function tryHarpoonPickup(target, targetOk)
     return hasBrainrotEquipped()
 end
 
+-- ============================================================================
+-- PROMPT INTERACTION (fallback)
+-- ============================================================================
 local function interactWithModel(model, holdDuration)
     local hrp = getHRP()
     if not hrp then return end
@@ -784,6 +808,7 @@ local function waitForRespawn()
     enablePhysics()
 end
 
+
 local instantTeleportConn = nil
 
 local function startInstantTeleportWatch()
@@ -845,11 +870,13 @@ local function runArenaLoop()
         local hrp = getHRP()
         if not hrp then task.wait(0.1); continue end
 
+
         if hasBrainrotEquipped() then
             returnToBase()
             continue
         end
 
+    
         local target = getBestBrainrot(hrp.Position)
         if not target then
             moveToWaitPosition()
@@ -881,6 +908,7 @@ local function runArenaLoop()
                 continue
             end
 
+
             if not targetOk() then continue end
 
             local part = getPartOf(target)
@@ -893,10 +921,11 @@ local function runArenaLoop()
             if targetOk() then
                 interactWithModel(target, PICKUP_HOLD_DURATION)
             end
-            if hasBrainrotEquipped() then returnToBase() end
-            if not hasBrainrotEquipped() then task.wait(0.05) end
+            if hasBrainrotEquipped() then returnToBase(); continue end
+            task.wait(0.05)
             continue
         end
+
 
         local arrived = arcTo(snapPos, arenaTweenSpeed, targetOk)
         task.cancel(trackTask)
@@ -994,7 +1023,7 @@ ArenaSection:Toggle({
     Callback = function(v)
         arenaEnabled = v
         if v then
-            firstBrainrotSecured = false  
+            firstBrainrotSecured = false
             if arenaLoop then task.cancel(arenaLoop); arenaLoop = nil end
             arenaLoop = task.spawn(runArenaLoop)
         else
