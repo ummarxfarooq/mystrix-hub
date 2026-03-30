@@ -268,7 +268,7 @@ local PICKUP_HOLD_DURATION  = 3.0
 local ARRIVAL_THRESHOLD     = 2.0
 local MOVE_TIMEOUT          = 25
 local WAIT_POSITION         = Vector3.new(1818, 3, 2681)
-local HARPOON_HOVER_HEIGHT  = 5
+local HARPOON_HOVER_HEIGHT  = 25
 local HARPOON_COOLDOWN      = 8
 
 local arenaEnabled          = false
@@ -787,7 +787,10 @@ end
 local instantTeleportConn = nil
 
 local function startInstantTeleportWatch()
-    if instantTeleportConn then return end
+    if instantTeleportConn then
+        pcall(function() instantTeleportConn:Disconnect() end)
+        instantTeleportConn = nil
+    end
     instantTeleportConn = RunService.Heartbeat:Connect(function()
         if not instantTeleport then return end
         if arenaEnabled then return end
@@ -976,7 +979,11 @@ ArenaSection:Toggle({
     Value    = false,
     Callback = function(v)
         instantTeleport = v
-        if v then startInstantTeleportWatch() end
+        if v then
+            cachedBasePart = nil
+            cachedBaseRefresh = 0
+            startInstantTeleportWatch()
+        end
     end,
 })
 
