@@ -262,16 +262,23 @@ local function getBrainrotRarity(name)
     return BrainrotToRarity[name] or "Common"
 end
 
+
+
 local PICKUP_HOLD_DURATION  = 3.0
 local ARRIVAL_THRESHOLD     = 2.0
 local MOVE_TIMEOUT          = 25
+local WAIT_POSITION         = Vector3.new(1818, 3, 2681)
+local HARPOON_HOVER_HEIGHT  = 5
+local HARPOON_COOLDOWN      = 8
 
-local arenaEnabled     = false
-local arenaLoop        = nil
-local arenaTweenSpeed  = 500
-local flyHeight        = 50
-local instantTeleport  = false
-local selectedRarities = {"Any"}
+local arenaEnabled          = false
+local arenaLoop             = nil
+local arenaTweenSpeed       = 500
+local flyHeight             = 50
+local instantTeleport       = false
+local selectedRarities      = {"Any"}
+local autoHarpoon           = false
+local firstBrainrotSecured  = false
 
 local bodyVelocity    = nil
 local bodyGyro        = nil
@@ -368,6 +375,47 @@ local function brainrotStillAvailable(obj)
     local folder = getArenaBrainrotsFolder()
     if not folder then return false end
     return obj.Parent == folder
+end
+
+local function getOwnBasePart()
+    local now = os.clock()
+    if cachedBasePart and cachedBasePart.Parent and now - cachedBaseRefresh < 10 then
+        return cachedBasePart
+    end
+    local basesFolder = workspace:FindFirstChild("Bases")
+    if not basesFolder then return nil end
+    for _, folder in ipairs(basesFolder:GetChildren()) do
+        if folder:GetAttribute("Holder") == LocalPlayer.UserId then
+            local sp = folder:FindFirstChild("Spawn")
+            if sp then
+                cachedBasePart    = sp
+                cachedBaseRefresh = now
+                return sp
+            end
+            for _, p in ipairs(folder:GetDescendants()) do
+                if p:IsA("BasePart") then
+                    cachedBasePart    = p
+                    cachedBaseRefresh = now
+                    return p
+                end
+            end
+        end
+    end
+    return nil
+end
+
+local function hasBrainrotEquipped()
+    local c = getCharacter()
+    if c then
+        for _, v in ipairs(c:GetChildren()) do
+            if v:IsA("Model") and CollectionService:HasTag(v, "ArenaBrainrot") then
+                return true
+            end
+        end
+    end
+    local pf = workspace:FindFirstChild(LocalPlayer.Name)
+    if pf and pf:FindFirstChild("RenderedBrainrot") then return true end
+    return false
 end
 
 local function enablePhysics()
@@ -483,6 +531,195 @@ local function arcTo(targetPos, speed, validCheck)
     return moveTo(targetPos, speed, validCheck)
 end
 
+local function moveToWaitPosition()
+    if not firstBrainrotSecured then return end
+
+    local hrp = getHRP()
+    if not hrp then return end
+    if (hrp.Position - WAIT_POSITION).Magnitude < 5 then return end
+
+    local function valid()
+        if not arenaEnabled then return false end
+        if hasBrainrotEquipped() then return false end
+        if #getAvailableBrainrots() > 0 then return false end
+        return true
+    end
+
+    if hrp.Position.Y < flyHeight - 3 then
+        local up = Vector3.new(hrp.Position.X, flyHeight, hrp.Position.Z)
+        if not moveTo(up, arenaTweenSpeed, valid) then return end
+    end
+    local over = Vector3.new(WAIT_POSITION.X, flyHeight, WAIT_POSITION.Z)
+    if not moveTo(over, arenaTweenSpeed, valid) then return end
+    moveTo(WAIT_POSITION, arenaTweenSpeed, valid)
+end
+
+local function returnToBase()
+    local basePart = getOwnBasePart()
+    if not basePart then return end
+
+    local basePos = Vector3.new(
+        basePart.Position.X,
+        basePart.Position.Y + 3,
+        basePart.Position.Z
+    )
+
+    local hrp = getHRP()
+    if not hrp then return end
+
+    if instantTeleport then
+        hrp.CFrame = CFrame.new(basePos)
+    else
+        arcTo(basePos, arenaTweenSpeed, nil)
+    end
+
+    local waitEnd = os.clock() + 5
+    while os.clock() < waitEnd and arenaEnabled do
+        if not hasBrainrotEquipped() then break end
+        local hrp2 = getHRP()
+        if hrp2 and basePart.Parent then
+            pcall(function()
+                firetouchinterest(hrp2, basePart, 0)
+                task.wait(0.05)
+                firetouchinterest(hrp2, basePart, 1)
+            end)
+        end
+        task.wait(0.05)
+    end
+
+    firstBrainrotSecured = true
+    if arenaEnabled then
+        moveToWaitPosition()
+    end
+end
+
+local function getHarpoonGun()
+    local function isHarpoon(tool)
+        if not tool:IsA("Tool") then return false end
+        if CollectionService:HasTag(tool, "HarpoonGun") then return true end
+        if tool:GetAttribute("GearType") == "Harpoon Gun" then return true end
+        if tool:GetAttribute("DisplayName") == "Harpoon Gun" then return true end
+        if tool.Name:lower():find("harpoon") then return true end
+        return false
+    end
+
+    local bp = LocalPlayer:FindFirstChild("Backpack")
+    if bp then
+        for _, tool in ipairs(bp:GetChildren()) do
+            if isHarpoon(tool) then return tool end
+        end
+    end
+    local c = getCharacter()
+    if c then
+        for _, tool in ipairs(c:GetChildren()) do
+            if isHarpoon(tool) then return tool end
+        end
+    end
+    return nil
+end
+
+local function isHarpoonReady(harpoon)
+    if not harpoon or not harpoon.Parent then return false end
+    local cooldownUntil = harpoon:GetAttribute("CooldownUntil")
+    if cooldownUntil and workspace:GetServerTimeNow() < cooldownUntil then
+        return false
+    end
+    return true
+end
+
+local function getPickupId(target)
+    local id = target:GetAttribute("_PickupId")
+    if id then return id end
+    local parent = target.Parent
+    while parent and parent ~= workspace do
+        id = parent:GetAttribute("_PickupId")
+        if id then return id end
+        parent = parent.Parent
+    end
+    return nil
+end
+
+local function fireHarpoon(targetPos, pickupId)
+    local ok = pcall(function()
+        local remote = game:GetService("ReplicatedStorage")
+            :FindFirstChild("Shared")
+            :FindFirstChild("Remotes")
+            :FindFirstChild("Networking")
+            :FindFirstChild("RE/Harpoon/HarpoonActivate")
+        if remote then
+            remote:FireServer(targetPos, pickupId)
+        end
+    end)
+    if not ok then
+        pcall(function()
+            local rs = game:GetService("ReplicatedStorage")
+            local remotes = rs:FindFirstChild("Shared") and
+                rs.Shared:FindFirstChild("Remotes")
+            if remotes then
+                local net = remotes:FindFirstChild("Networking")
+                if net then
+                    local r = net:FindFirstChild("RE/Harpoon/HarpoonActivate")
+                    if r then r:FireServer(targetPos, pickupId) end
+                end
+            end
+        end)
+    end
+end
+
+local function tryHarpoonPickup(target, targetOk)
+    if not autoHarpoon then return false end
+
+    local harpoon = getHarpoonGun()
+    if not harpoon then return false end
+
+    if not isHarpoonReady(harpoon) then return false end
+
+    local part = getPartOf(target)
+    if not part then return false end
+
+    local hoverPos = Vector3.new(part.Position.X, part.Position.Y + HARPOON_HOVER_HEIGHT, part.Position.Z)
+
+    local hrp = getHRP()
+    if not hrp then return false end
+
+    if hrp.Position.Y < flyHeight - 3 then
+        local up = Vector3.new(hrp.Position.X, flyHeight, hrp.Position.Z)
+        if not moveTo(up, arenaTweenSpeed, targetOk) then return false end
+    end
+    local over = Vector3.new(hoverPos.X, flyHeight, hoverPos.Z)
+    if not moveTo(over, arenaTweenSpeed, targetOk) then return false end
+    if not moveTo(hoverPos, arenaTweenSpeed, targetOk) then return false end
+
+    if bodyVelocity and bodyVelocity.Parent then
+        bodyVelocity.Velocity = Vector3.zero
+    end
+
+    local readyWait = os.clock() + 2
+    while os.clock() < readyWait and arenaEnabled do
+        if LocalPlayer:GetAttribute("HarpoonReady") then break end
+        if not targetOk() then return false end
+        task.wait(0.05)
+    end
+
+    if not isHarpoonReady(harpoon) then return false end
+    if not targetOk() then return false end
+
+    part = getPartOf(target)
+    if not part then return false end
+
+    local pickupId = getPickupId(target)
+    fireHarpoon(part.Position, pickupId)
+
+    local waitEnd = os.clock() + 1.0
+    while os.clock() < waitEnd do
+        if hasBrainrotEquipped() then return true end
+        if not targetOk() then break end
+        task.wait(0.02)
+    end
+
+    return hasBrainrotEquipped()
+end
+
 local function interactWithModel(model, holdDuration)
     local hrp = getHRP()
     if not hrp then return end
@@ -504,65 +741,37 @@ local function interactWithModel(model, holdDuration)
     end
 
     for _, prompt in ipairs(prompts) do
-        task.spawn(function()
-            for _ = 1, 3 do
-                pcall(function() fireproximityprompt(prompt) end)
-                task.wait(0.04)
-            end
+        local duration = (prompt.HoldDuration and prompt.HoldDuration > 0)
+            and prompt.HoldDuration
+            or holdDuration
 
-            pcall(function() prompt:InputHoldBegin() end)
-            task.wait(holdDuration + 0.1)
-            pcall(function()
-                if prompt and prompt.Parent then
-                    prompt:InputHoldEnd()
-                end
-            end)
+        local ok = pcall(function()
+            holdproximityprompt(prompt, duration)
         end)
-    end
-end
 
-local function hasBrainrotEquipped()
-    local c = getCharacter()
-    if c then
-        for _, v in ipairs(c:GetChildren()) do
-            if v:IsA("Model") and CollectionService:HasTag(v, "ArenaBrainrot") then
-                return true
-            end
-        end
-    end
-    local pf = workspace:FindFirstChild(LocalPlayer.Name)
-    if pf and pf:FindFirstChild("RenderedBrainrot") then return true end
-    return false
-end
-
-local function getOwnBasePart()
-    local now = os.clock()
-    if cachedBasePart and cachedBasePart.Parent and now - cachedBaseRefresh < 10 then
-        return cachedBasePart
-    end
-    local basesFolder = workspace:FindFirstChild("Bases")
-    if not basesFolder then return nil end
-    for _, folder in ipairs(basesFolder:GetChildren()) do
-        if folder:GetAttribute("Holder") == LocalPlayer.UserId then
-            local sp = folder:FindFirstChild("Spawn")
-            if sp then
-                cachedBasePart   = sp
-                cachedBaseRefresh = now
-                return sp
-            end
-            for _, p in ipairs(folder:GetDescendants()) do
-                if p:IsA("BasePart") then
-                    cachedBasePart   = p
-                    cachedBaseRefresh = now
-                    return p
+        if not ok then
+            pcall(function() prompt:InputHoldBegin() end)
+            local elapsed = 0
+            while elapsed < duration + 0.15 do
+                if not prompt or not prompt.Parent then break end
+                if part and part.Parent then
+                    pcall(function()
+                        local h = getHRP()
+                        if h then
+                            firetouchinterest(h, part, 0)
+                            firetouchinterest(h, part, 1)
+                        end
+                    end)
                 end
+                task.wait(0.03)
+                elapsed = elapsed + 0.03
             end
+            pcall(function()
+                if prompt and prompt.Parent then prompt:InputHoldEnd() end
+            end)
         end
     end
-    return nil
 end
-
-local characterReadySignal = nil
 
 local function waitForRespawn()
     disablePhysics()
@@ -575,6 +784,28 @@ local function waitForRespawn()
     enablePhysics()
 end
 
+local instantTeleportConn = nil
+
+local function startInstantTeleportWatch()
+    if instantTeleportConn then return end
+    instantTeleportConn = RunService.Heartbeat:Connect(function()
+        if not instantTeleport then return end
+        if arenaEnabled then return end
+        if not hasBrainrotEquipped() then return end
+        local basePart = getOwnBasePart()
+        if not basePart then return end
+        local hrp = getHRP()
+        if not hrp then return end
+        hrp.CFrame = CFrame.new(
+            basePart.Position.X,
+            basePart.Position.Y + 3,
+            basePart.Position.Z
+        )
+    end)
+end
+
+startInstantTeleportWatch()
+
 local function runArenaLoop()
     local deathConn = nil
     local function hookDeath()
@@ -583,8 +814,8 @@ local function runArenaLoop()
         local hum = c:FindFirstChildOfClass("Humanoid")
         if not hum then return end
         deathConn = hum.Died:Connect(function()
-            bodyVelocity  = nil
-            bodyGyro      = nil
+            bodyVelocity    = nil
+            bodyGyro        = nil
             originalGravity = nil
         end)
     end
@@ -612,45 +843,14 @@ local function runArenaLoop()
         if not hrp then task.wait(0.1); continue end
 
         if hasBrainrotEquipped() then
-            local basePart = getOwnBasePart()
-            if basePart then
-                local basePos = Vector3.new(
-                    basePart.Position.X,
-                    basePart.Position.Y + 3,
-                    basePart.Position.Z
-                )
-
-                if instantTeleport then
-                    hrp.CFrame = CFrame.new(basePos)
-                else
-                    arcTo(basePos, arenaTweenSpeed, nil)
-                end
-
-                local waitEnd = os.clock() + 5
-                while os.clock() < waitEnd and arenaEnabled do
-                    if not hasBrainrotEquipped() then break end
-                    local hrp2 = getHRP()
-                    if hrp2 and basePart.Parent then
-                        pcall(function()
-                            firetouchinterest(hrp2, basePart, 0)
-                            task.wait(0.05)
-                            firetouchinterest(hrp2, basePart, 1)
-                        end)
-                    end
-                    task.wait(0.05)
-                end
-            else
-                task.wait(0.3)
-            end
+            returnToBase()
             continue
         end
 
         local target = getBestBrainrot(hrp.Position)
         if not target then
-            if bodyVelocity and bodyVelocity.Parent then
-                bodyVelocity.Velocity = Vector3.zero
-            end
-            task.wait(0.05)
+            moveToWaitPosition()
+            task.wait(0.1)
             continue
         end
 
@@ -669,35 +869,55 @@ local function runArenaLoop()
             return brainrotStillAvailable(target) and getPartOf(target) ~= nil
         end
 
+        if autoHarpoon and getHarpoonGun() then
+            local harpoonGot = tryHarpoonPickup(target, targetOk)
+            task.cancel(trackTask)
+
+            if harpoonGot then
+                returnToBase()
+                continue
+            end
+
+            if not targetOk() then continue end
+
+            local part = getPartOf(target)
+            if not part then continue end
+            if not moveTo(part.Position, arenaTweenSpeed, targetOk) then continue end
+            if not targetOk() then continue end
+
+            interactWithModel(target, PICKUP_HOLD_DURATION)
+            if hasBrainrotEquipped() then returnToBase(); continue end
+            if targetOk() then
+                interactWithModel(target, PICKUP_HOLD_DURATION)
+            end
+            if hasBrainrotEquipped() then returnToBase() end
+            if not hasBrainrotEquipped() then task.wait(0.05) end
+            continue
+        end
+
         local arrived = arcTo(snapPos, arenaTweenSpeed, targetOk)
         task.cancel(trackTask)
 
         if not arrived or not targetOk() then continue end
 
         interactWithModel(target, PICKUP_HOLD_DURATION)
-
-        local waitEnd = os.clock() + PICKUP_HOLD_DURATION + 0.5
-        while os.clock() < waitEnd and arenaEnabled do
-            if hasBrainrotEquipped() then break end
-            local hrp2 = getHRP()
-            local part = getPartOf(target)
-            if hrp2 and part and target.Parent then
-                pcall(function()
-                    firetouchinterest(hrp2, part, 0)
-                    task.wait(0.02)
-                    firetouchinterest(hrp2, part, 1)
-                end)
-            end
-            task.wait(0.02)
-        end
-
-        if not hasBrainrotEquipped() then
-            task.wait(0.05)
+        if hasBrainrotEquipped() then
+            returnToBase()
             continue
         end
+
+        if targetOk() then
+            interactWithModel(target, PICKUP_HOLD_DURATION)
+        end
+        if hasBrainrotEquipped() then
+            returnToBase()
+            continue
+        end
+
+        task.wait(0.05)
     end
 
-    if deathConn    then deathConn:Disconnect()    end
+    if deathConn     then deathConn:Disconnect()     end
     if charAddedConn then charAddedConn:Disconnect() end
     disablePhysics()
 end
@@ -744,10 +964,20 @@ ArenaSection:Dropdown({
 })
 
 ArenaSection:Toggle({
+    Title    = "Auto Harpoon",
+    Flag     = "ArenaAutoHarpoon",
+    Value    = false,
+    Callback = function(v) autoHarpoon = v end,
+})
+
+ArenaSection:Toggle({
     Title    = "Instant Teleport to Base",
     Flag     = "ArenaInstantTeleport",
     Value    = false,
-    Callback = function(v) instantTeleport = v end,
+    Callback = function(v)
+        instantTeleport = v
+        if v then startInstantTeleportWatch() end
+    end,
 })
 
 ArenaSection:Toggle({
@@ -757,6 +987,7 @@ ArenaSection:Toggle({
     Callback = function(v)
         arenaEnabled = v
         if v then
+            firstBrainrotSecured = false  
             if arenaLoop then task.cancel(arenaLoop); arenaLoop = nil end
             arenaLoop = task.spawn(runArenaLoop)
         else
