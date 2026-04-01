@@ -1120,7 +1120,8 @@ do  -- isolate locals
         ["Meta Technetta"] = "https://image2url.com/r2/default/images/1773767245928-07780001-c81e-430b-aec3-6ea83eeda6ab.png",   
         ["Magmew"] = "https://image2url.com/r2/default/images/1773767105829-759b1fec-4cd5-4f12-a1f0-3b92025546f7.png",           
         ["Doomini Tiktookini"] = "https://image2url.com/r2/default/images/1773767143279-a60758a3-4502-4cfa-91b4-7eced9487ebb.png", 
-        ["Nebuluck"] = "https://image2url.com/r2/default/images/1773767171097-dc6776c1-2bf3-42ca-8dc3-c0c4a38ff3df.png",         
+        ["Nebuluck"] = "https://image2url.com/r2/default/images/1773767171097-dc6776c1-2bf3-42ca-8dc3-c0c4a38ff3df.png",       
+        ["Polizini Cerbero"] = "https://image2url.com/r2/default/images/1775061922424-8e5094be-92b5-4c0a-b64b-33b34b1040e7.png",       
         ["default"] = "https://image2url.com/r2/default/images/1773767292755-58e234a7-e389-487b-9b6e-ab080814d382.png"   
     }
     -- ──────────────────────────────────────────────────────────────────────────
@@ -1197,7 +1198,7 @@ do  -- isolate locals
 
     Infinity = {
         "Noobini Infeeny","Anububu","Meta Technetta",
-        "Magmew","Doomini Tiktookini","Nebuluck","Tung Tung Clownissimo"
+        "Magmew","Doomini Tiktookini","Nebuluck","Tung Tung Clownissimo", "Polizini Cerbero"
     }
     }
 
