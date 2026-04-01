@@ -9,6 +9,7 @@ OldFireServer = hookfunction(Instance.new("RemoteEvent").FireServer, newcclosure
     print(unpack(Args))
     return
 end))
+
 local function deleteWorkspaceUnderscore()
     pcall(function()
         local underscoreFolder = workspace:FindFirstChild("___")
@@ -53,7 +54,7 @@ local Window = WindUI:CreateWindow({
     Title               = "Escape Tsunami For Brainrots!",
     Icon                = "app-window-mac",
     Author              = "Mystrix Hub",
-    Folder              = "MystrixHub",
+    Folder              = "MystrixHubArena",
     Theme               = "Dark",
     Size                = UDim2.fromOffset(580, 460),
     MinSize             = Vector2.new(560, 350),
@@ -921,3 +922,328 @@ ArenaSection:Toggle({
         end
     end,
 })
+
+ConfigTab = Window:Tab({
+    Title = "Config",
+    Icon = "save",
+    Opened = true,
+})
+
+local ConfigManager = Window.ConfigManager
+local configCache = {}
+
+local function getAllConfigNames()
+    local configs = {}
+    local ok, result = pcall(function() return ConfigManager:AllConfigs() end)
+    if ok and result then
+        for _, configName in ipairs(result) do
+            table.insert(configs, configName)
+        end
+    end
+    if #configs == 0 then
+        table.insert(configs, "No configs found")
+    end
+    return configs
+end
+
+local function saveLastConfigName(name)
+    pcall(function()
+        if writefile then
+            writefile("MystrixHubArena_LastConfig.txt", name)
+        end
+    end)
+end
+
+local function loadLastConfigName()
+    local ok, result = pcall(function()
+        if readfile and isfile and isfile("MystrixHubArena_LastConfig.txt") then
+            return readfile("MystrixHubArena_LastConfig.txt")
+        end
+        return nil
+    end)
+    if ok and result and result ~= "" then
+        return result
+    end
+    return nil
+end
+
+
+local function getAutoLoadSetting()
+    local ok, result = pcall(function()
+        if readfile and isfile and isfile("MystrixHubArena_AutoLoad.txt") then
+            local content = readfile("MystrixHubArena_AutoLoad.txt")
+            return content == "true"
+        end
+        return false
+    end)
+    return ok and result or false
+end
+
+local function setAutoLoadSetting(value)
+    pcall(function()
+        if writefile then
+            writefile("MystrixHubArena_AutoLoad.txt", value and "true" or "false")
+        end
+    end)
+end
+
+
+local function getConfig(configName)
+    if configCache[configName] then
+        return configCache[configName]
+    end
+    local config = ConfigManager:CreateConfig(configName)
+    configCache[configName] = config
+    return config
+end
+
+ SaveSection = ConfigTab:Section({
+    Title = "Save Config",
+    Icon = "save",
+    Opened = true,
+})
+
+local configNameInput = "MystrixHubArena"
+
+SaveSection:Input({
+    Title = "Config Name",
+    Icon = "pencil",
+    Placeholder = "MystrixHubArena",
+    Callback = function(value)
+        if value and value ~= "" then
+            configNameInput = value
+        else
+            configNameInput = "MystrixHubArena"
+        end
+    end
+})
+
+SaveSection:Button({
+    Title = "Save Config",
+    Icon = "save",
+    Callback = function()
+        task.spawn(function()
+            local configToSave = getConfig(configNameInput)
+            local ok, err = pcall(function() configToSave:Save() end)
+            if ok then
+                saveLastConfigName(configNameInput)
+            end
+            WindUI:Notify({
+                Title = ok and "Config Saved" or "Save Failed",
+                Content = ok and ("Saved as: " .. configNameInput) or tostring(err),
+                Duration = 3,
+                Icon = ok and "check-circle" or "alert-circle",
+            })
+            if ok and ConfigDropdown then
+                local newConfigs = getAllConfigNames()
+                ConfigDropdown:Refresh(newConfigs)
+            end
+        end)
+    end
+})
+
+
+ManageSection = ConfigTab:Section({
+    Title = "Manage Configs",
+    Icon = "folder",
+    Opened = true,
+})
+
+local selectedConfig = nil
+local initialConfigs = getAllConfigNames()
+ConfigDropdown = ManageSection:Dropdown({
+    Title = "Select Config",
+    Icon = "folder-open",
+    Values = initialConfigs,
+    Multi = false,
+    Value = initialConfigs[1] or "No configs found",
+    Callback = function(value)
+        if value ~= "No configs found" then
+            selectedConfig = value
+        else
+            selectedConfig = nil
+        end
+    end
+})
+
+ManageSection:Button({
+    Title = "Refresh Config List",
+    Icon = "refresh-cw",
+    Callback = function()
+        local newConfigs = getAllConfigNames()
+        ConfigDropdown:Refresh(newConfigs)
+        WindUI:Notify({
+            Title = "Refreshed",
+            Content = "Config list has been updated!",
+            Duration = 2,
+            Icon = "check-circle",
+        })
+    end
+})
+
+ManageSection:Button({
+    Title = "Load Selected Config",
+    Icon = "folder-open",
+    Callback = function()
+        if not selectedConfig then
+            WindUI:Notify({
+                Title = "No Config Selected",
+                Content = "Please select a config from the dropdown first!",
+                Duration = 3,
+                Icon = "alert-circle",
+            })
+            return
+        end
+        WindUI:Notify({
+            Title = "Loading Config",
+            Content = "Loading: " .. selectedConfig .. ", please wait...",
+            Duration = 3,
+            Icon = "loader-2",
+        })
+        task.spawn(function()
+            local configToLoad = getConfig(selectedConfig)
+            local ok, err = pcall(function() configToLoad:Load() end)
+            if ok then
+                saveLastConfigName(selectedConfig)
+            end
+            WindUI:Notify({
+                Title = ok and "Config Loaded" or "Load Failed",
+                Content = ok and ("Loaded: " .. selectedConfig) or tostring(err),
+                Duration = 3,
+                Icon = ok and "check-circle" or "alert-circle",
+            })
+        end)
+    end
+})
+
+ManageSection:Button({
+    Title = "Delete Selected Config",
+    Icon = "trash-2",
+    Callback = function()
+        if not selectedConfig then
+            WindUI:Notify({
+                Title = "No Config Selected",
+                Content = "Please select a config from the dropdown first!",
+                Duration = 3,
+                Icon = "alert-circle",
+            })
+            return
+        end
+        task.spawn(function()
+            local configToDelete = getConfig(selectedConfig)
+            local ok, err = pcall(function() configToDelete:Delete() end)
+            WindUI:Notify({
+                Title = ok and "Config Deleted" or "Delete Failed",
+                Content = ok and ("Deleted: " .. selectedConfig) or tostring(err),
+                Duration = 3,
+                Icon = ok and "check-circle" or "alert-circle",
+            })
+            if ok then
+
+                configCache[selectedConfig] = nil
+                local lastConfig = loadLastConfigName()
+                if lastConfig == selectedConfig then
+                    pcall(function()
+                        if writefile then
+                            writefile("MystrixHubArena_LastConfig.txt", "")
+                        end
+                    end)
+                end
+                selectedConfig = nil
+                local newConfigs = getAllConfigNames()
+                ConfigDropdown:Refresh(newConfigs)
+            end
+        end)
+    end
+})
+
+
+AutoLoadSection = ConfigTab:Section({
+    Title = "Auto Load Config",
+    Icon = "Power",
+    Opened = true,
+})
+
+AutoLoadToggle = AutoLoadSection:Toggle({
+    Title = "Enable Auto Load",
+    Value = getAutoLoadSetting(),
+    Callback = function(value)
+        setAutoLoadSetting(value)
+        WindUI:Notify({
+            Title = "Auto Load " .. (value and "Enabled" or "Disabled"),
+            Content = value and "Last config will load on execute." or "Auto load turned off",
+            Duration = 2,
+            Icon = value and "check-circle" or "info",
+        })
+    end
+})
+
+
+AutoLoadSection:Button({
+    Title = "Load Last Config",
+    Icon = "folder-open",
+    Callback = function()
+        local lastConfig = loadLastConfigName()
+        if not lastConfig or lastConfig == "" then
+            WindUI:Notify({
+                Title = "No Last Config",
+                Content = "You haven't saved any config yet.",
+                Duration = 3,
+                Icon = "alert-circle",
+            })
+            return
+        end
+        WindUI:Notify({
+            Title = "Loading Last Config",
+            Content = "Loading: " .. lastConfig .. "...",
+            Duration = 2,
+            Icon = "loader-2",
+        })
+        task.spawn(function()
+            local configToLoad = getConfig(lastConfig)
+            local ok, err = pcall(function() configToLoad:Load() end)
+            if ok then
+                saveLastConfigName(lastConfig)
+            end
+            WindUI:Notify({
+                Title = ok and "Config Loaded" or "Load Failed",
+                Content = ok and ("Loaded: " .. lastConfig) or tostring(err),
+                Duration = 3,
+                Icon = ok and "check-circle" or "alert-circle",
+            })
+        end)
+    end
+})
+
+
+local function attemptAutoLoad()
+    local autoLoad = getAutoLoadSetting()
+    if autoLoad then
+        local lastConfig = loadLastConfigName()
+        if lastConfig and lastConfig ~= "" then
+            task.spawn(function()
+           
+                task.wait(0.5)
+                local configToLoad = getConfig(lastConfig)
+                local ok, err = pcall(function() configToLoad:Load() end)
+                if ok then
+                    WindUI:Notify({
+                        Title = "Auto Load",
+                        Content = "Loaded last config: " .. lastConfig,
+                        Duration = 3,
+                        Icon = "check-circle",
+                    })
+                else
+                    WindUI:Notify({
+                        Title = "Auto Load Failed",
+                        Content = tostring(err),
+                        Duration = 3,
+                        Icon = "alert-circle",
+                    })
+                end
+            end)
+        end
+    end
+end
+
+attemptAutoLoad()
