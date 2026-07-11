@@ -7,6 +7,14 @@ local games = {
         name = "Kick a Lucky Block",
         url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/KALB"
     },
+   [138381251771774] = {
+        name = "Drain the Lake",
+        url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/dtl"
+    },
+    [124786371598438] = {
+        name = "Drain the Lake",
+        url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/dtl"
+    },
     [118915549367482] = {
         name = "Dont Wake The Brainrots",
         url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/dont%20wake%20the%20brainrots"
