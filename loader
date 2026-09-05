@@ -7,6 +7,10 @@ local games = {
         name = "Kick a Lucky Block",
         url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/KALB"
     },
+        [5496455308] = {
+        name = "Tower FL",
+        url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/TowerFL"
+    },
    [138381251771774] = {
         name = "Drain the Lake",
         url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/dtl"
@@ -119,5 +123,5 @@ if gameData then
         notify("Mystrix Hub", "Error loading script:\n" .. tostring(err), 8)
     end
 else
-    notify("Mystrix Hub", "Game not supported!\nPlace ID: " .. tostring(currentPlaceId) .. " Join our Discord for support: discord.gg/XV66VWqAaN", 10)
+    notify("Mystrix Hub", "Game not supported!\nPlace ID: " .. tostring(currentPlaceId) .. " Join our Discord for support: https://discord.gg/46JkThWjPB", 10)
 end
