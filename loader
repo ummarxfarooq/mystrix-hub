@@ -23,6 +23,10 @@ local games = {
         name = "Ride a Pet",
         url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/RideAPet"
     },
+    [126987974021910] = {
+        name = "Illegal Soccer",
+        url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/IllegalSoccer"
+    },
     [118915549367482] = {
         name = "Dont Wake The Brainrots",
         url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/dont%20wake%20the%20brainrots"
