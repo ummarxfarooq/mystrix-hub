@@ -31,6 +31,10 @@ local games = {
         name = "Drive A Kukirin!",
         url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/DriveAKukirin"
     },
+    [118805555015549] = {
+        name = "+1 Loot To Forge",
+        url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/LootToForge"
+    }, 
     [118915549367482] = {
         name = "Dont Wake The Brainrots",
         url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/dont%20wake%20the%20brainrots"
