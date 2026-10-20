@@ -35,6 +35,10 @@ local games = {
         name = "+1 Loot To Forge",
         url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/LootToForge"
     }, 
+    [85738654635245] = {
+        name = "Climb For Animals Eggs🥚",
+        url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/ClimbForAnimalsEggs"
+    },
     [118915549367482] = {
         name = "Dont Wake The Brainrots",
         url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/dont%20wake%20the%20brainrots"
