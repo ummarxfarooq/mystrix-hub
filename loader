@@ -19,6 +19,10 @@ local games = {
         name = "Drain the Lake",
         url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/dtl"
     },
+    [137151641329864] = {
+        name = "RoFront",
+        url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/RoFront"
+    },
     [124216119978534] = {
         name = "Ride a Pet",
         url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/RideAPet"
