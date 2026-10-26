@@ -15,6 +15,10 @@ local games = {
         name = "Monochrome",
         url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/Monochrome"
     },
+    [122840796290491] = {
+        name = "Kukirin Life",
+        url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/KukirinLife"
+    },
     [138381251771774] = {
         name = "Drain the Lake",
         url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/dtl"
