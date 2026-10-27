@@ -97,6 +97,18 @@ local games = {
     }
 }
 
+local TOH_IDS = {
+    1962086868, 3582763398, 94971861814985, 2127551566, 7227293156,
+    7237795212, 2203399276, 78061339299150, 90821256595907,
+    130782057180437, 5253186791,
+}
+
+local TOH_URL = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/TowerOfHell"
+
+for _, id in ipairs(TOH_IDS) do
+    games[id] = { name = "Tower of Hell", url = TOH_URL }
+end
+
 local StarterGui = game:GetService("StarterGui")
 local currentPlaceId = game.PlaceId
 local gameData = games[currentPlaceId]
