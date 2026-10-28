@@ -11,6 +11,10 @@ local games = {
         name = "Tower FL",
         url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/TowerFL"
     },
+    [74023858073178] = {
+        name = "Bike For Eggs",
+        url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/BikeForEggs"
+    },
     [134208374070897] = {
         name = "Monochrome",
         url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/Monochrome"
