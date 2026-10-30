@@ -1,3 +1,4 @@
+
 local games = {
     [7211666966] = {
         name = "Tower Of Jump",
@@ -22,6 +23,10 @@ local games = {
     [103376974041765] = {
         name = "Bike Universe - Sunset City",
         url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/BikeUniverse"
+    },
+    [120219252362013] = {
+        name = "Throw Food For Animals",
+        url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/ThrowFoodForAnimals"
     },
     [134208374070897] = {
         name = "Monochrome",
