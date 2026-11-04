@@ -16,6 +16,10 @@ local games = {
         name = "Bike For Eggs",
         url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/BikeForEggs"
     },
+    [95168737547508] = {
+        name = "Steal a Pet and Ride it!",
+        url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/StealaPetAndRideIt"
+    },
     [98628861455414] = {
         name = "Bike Universe - Stunt Valley",
         url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/BikeUniverse"
